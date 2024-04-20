@@ -3,28 +3,34 @@
  * * 이름 : 배성빈
  * * 설명 : 서버와 데이터베이스의 통신 구현
  */
+
+
+// !puuid, name, tag로 만들어진 프로토타입 테이블이라 
+//! enum.js랑 합치면 다시 업데이트 하겠슴당 
 const DataBase = require("better-sqlite3");
+
 class Manager{
-  constructor(){
+  //? constructor Role : db access || check summoners TBL
+  constructor(accessDB){
     this.db = new DataBase("./summoner.db", { verbose: console.log });
     this.db.pragma("journal_mode = WAL");
+    let check = this.db.prepare("SELECT COUNT(*) FROM sqlite_master WHERE name='summoners'");
+    let isTrue = check.get(); //? check.get => bool type
+    //summoners 테이블이 존재하지 않으면 생성.
+    if(isTrue === !true){ 
+      this.db.exec("CREATE TABLE summoners (puuid TEXT PRIMARY KEY,name TEXT,tag TEXT)");
+    }
+    else{
+      return;
+    } 
   }
 
-  createSummonerDB(){
-    let check = this.db.prepare("SELECT COUNT(*) FROM sqlite_master WHERE name='summoners'");
-    let canCreate = check.get();
-    if(canCreate === !true){
-      this.db.exec("CREATE TABLE summoners (puuid TEXT PRIMARY KEY,name TEXT,tag TEXT)");
-    }else{ return; } 
-  }
-  insertData(obj){
-    let insert = this.db.prepare(
-      "INSERT INTO summoners (puuid, name, tag) VALUES (?, ?, ?)"  
-    );
-    const {puuid , name, tag} = obj;
+  summonerInsertData(obj){
+    const {puuid,name,tag} = obj;
+     insert = this.db.prepare(`INSERT INTO summoners (${ele}) VALUES (?)`);
     try{
       insert.run(puuid, name, tag);
-    } catch(error){
+    }catch(error){
       console.error(error.message);
     } 
   }
@@ -41,20 +47,25 @@ class Manager{
       const string = `${str}%`
       let list = receive.all(`${string}`);
       console.table(list);
-    }catch(error){
+    }catch(error)
+    { 
       console.error(error.message);
     }
-    
   }
   //테스트 
   returnAll(){
     let table = this.db.prepare("SELECT * FROM summoners");
     let i = table.get();
     console.table(i);
-  }
+  }  
 }
 
+let obj = {
+  "puuid": "m1VXGEiSIiTjtPGGWGVWYg7cmi27PR-RUQN_kv_LEcuCdWiz1tFuP6Ssuc2g",
+  "name": "터검니",
+  "tag": "000"
+};
 
-// let request = require("request");
-// let key;//환경변수 설정.
-// let id; //request 타고 오는 거/
+let mng = new Manager();
+mng.insertData(obj);
+
